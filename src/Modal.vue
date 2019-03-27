@@ -43,8 +43,15 @@
 <script>
 import Modal from './index'
 import Resizer from './Resizer.vue'
-import { inRange, createModalEvent, getMutationObserver } from './utils'
-import { parseNumber, validateNumber } from './parser'
+import {
+	createModalEvent,
+	getMutationObserver,
+	inRange
+} from './utils'
+import {
+	parseNumber,
+	validateNumber
+} from './parser'
 
 export default {
   name: 'VueJsModal',
@@ -240,7 +247,9 @@ export default {
      * Removes blocked scroll
      */
     if (this.scrollable) {
-      document.body.classList.remove('v--modal-block-scroll')
+    	if($('.v--modal-overlay').length === 1){
+      		document.body.classList.remove('v--modal-block-scroll')
+		}
     }
   },
   computed: {
@@ -261,8 +270,18 @@ export default {
         pivotX,
         pivotY,
         trueModalWidth,
-        trueModalHeight
+        trueModalHeight,
+        width
       } = this
+
+		if(window.width <= width){
+			return {
+				top: 0,
+				// bottom: 0,
+				left: 0,
+				right: 0,
+			}
+		}
 
       const maxLeft = window.width - trueModalWidth
       const maxTop = window.height - trueModalHeight
@@ -280,11 +299,15 @@ export default {
      * fits the window
      */
     trueModalWidth () {
-      const { window, modal, adaptive, minWidth, maxWidth } = this
+      const { window, modal, adaptive, minWidth, maxWidth, width } = this
 
       const value = modal.widthType === '%'
         ? window.width / 100 * modal.width
         : modal.width
+
+		if(window.width <= parseInt(width)){
+			return window.width
+		}
 
       const max = Math.min(window.width, maxWidth)
 
@@ -335,11 +358,23 @@ export default {
      * CSS styles for position and size of the modal
      */
     modalStyle () {
+		let height = 'auto'
+		let top = this.position.top + 'px'
+
+		if ( !this.isAutoHeight ) {
+			height = this.trueModalHeight + 'px'
+
+			if ( this.window.width <= parseInt( this.width ) ) {
+				height = '100%'
+				top = 0
+			}
+		}
+
       return {
-        top: this.position.top + 'px',
+		  top,
         left: this.position.left + 'px',
         width: this.trueModalWidth + 'px',
-        height: this.isAutoHeight ? 'auto' : this.trueModalHeight + 'px'
+        height,
       }
     }
   },
@@ -679,16 +714,17 @@ export default {
 
 <style>
 .v--modal-block-scroll {
-  overflow: hidden;
-  width: 100vw;
+	overflow: hidden !important;
+	width: 100%;
+	height: 100vh;
 }
 
 .v--modal-overlay {
   position: fixed;
   box-sizing: border-box;
   left: 0;
+  right: 0;
   top: 0;
-  width: 100%;
   height: 100vh;
   background: rgba(0, 0, 0, 0.2);
   z-index: 999;
@@ -699,6 +735,7 @@ export default {
   height: 100%;
   min-height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -720,9 +757,9 @@ export default {
 .v--modal {
   background-color: white;
   text-align: left;
-  border-radius: 3px;
   box-shadow: 0 20px 60px -2px rgba(27, 33, 58, 0.4);
   padding: 0;
+  max-width: 100% !important;
 }
 
 .v--modal.v--modal-fullscreen {
